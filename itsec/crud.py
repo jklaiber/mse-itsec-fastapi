@@ -1,5 +1,4 @@
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.sqltypes import String
 
 from . import models, schemas
 
@@ -39,10 +38,9 @@ def create_user_item(db: Session, item: schemas.ItemCreate, user_id: int):
     return db_item
 
 
-def get_user_by_name_safe(db: Session, name: String):
+def get_user_by_name_safe(db: Session, name: str):
     return db.query(models.User).filter(models.User.name == name).first()
 
 
-def get_user_by_name_unsafe(db: Session, name: String):
-    print(name)
+def get_user_by_name_unsafe(db: Session, name: str):
     return db.execute(f"SELECT * FROM users WHERE name = '{name}'").all()
