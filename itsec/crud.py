@@ -38,8 +38,13 @@ def create_user_item(db: Session, item: schemas.ItemCreate, user_id: int):
     return db_item
 
 
-def get_user_by_name_safe(db: Session, name: str):
+def get_user_by_name_safe1(db: Session, name: str):
     return db.query(models.User).filter(models.User.name == name).first()
+
+
+def get_user_by_name_safe2(db: Session, name: str):
+    sql_statement: str = "SELECT * FROM users WHERE name = :name "
+    return db.execute(sql_statement, {"name": name}).first()
 
 
 def get_user_by_name_unsafe(db: Session, name: str):
