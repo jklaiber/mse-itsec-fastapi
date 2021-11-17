@@ -4,6 +4,10 @@
     xhttp.open("GET", url);
     xhttp.send();
 
+    function htmlEntities(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     xhttp.onload = function () {
         if (this.readyState == 4 && this.status == 200) {
             let response = JSON.parse(xhttp.responseText)
@@ -13,8 +17,8 @@
                 let row = table.insertRow(-1)
                 let nameCell = row.insertCell()
                 let emailCell = row.insertCell()
-                nameCell.innerHTML = response[i].name
-                emailCell.innerHTML = response[i].email
+                nameCell.innerHTML = htmlEntities(response[i].name)
+                emailCell.innerHTML = htmlEntities(response[i].email)
             }
         }
     };

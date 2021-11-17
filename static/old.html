@@ -1,10 +1,17 @@
 <script>
+    // toHtmlEntities = function() {
+    // return this.replace(/./gm, function(s) {
+    //     return (s.match(/[a-z0-9\s]+/i)) ? s : "&#" + s.charCodeAt(0) + ";";
+    // });
+    // };
+
+    window.location = window.location;
     const xhttp = new XMLHttpRequest();
     const url = '/users';
     xhttp.open("GET", url);
     xhttp.send();
 
-    xhttp.onload = function () {
+    xhttp.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
             let response = JSON.parse(xhttp.responseText)
             let table = document.getElementById("userOverview")
@@ -14,7 +21,7 @@
                 let nameCell = row.insertCell()
                 let emailCell = row.insertCell()
                 nameCell.innerHTML = response[i].name
-                emailCell.innerHTML = response[i].email
+                // emailCell.innerHTML = toHtmlEntities(response[i].email)
             }
         }
     };

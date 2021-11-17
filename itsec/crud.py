@@ -49,3 +49,8 @@ def get_user_by_name_safe2(db: Session, name: str):
 
 def get_user_by_name_unsafe(db: Session, name: str):
     return db.execute(f"SELECT * FROM users WHERE name = '{name}'").all()
+
+
+def delete_user_by_id(db: Session, id: int):
+    db.query(models.User).filter(models.User.id == id).delete()
+    db.commit()
