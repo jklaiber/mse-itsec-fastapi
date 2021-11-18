@@ -34,6 +34,12 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return users
 
 
+@app.get("/usersencoded/", response_model=List[schemas.User])
+def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    users = crud.get_users_encoded(db, skip=skip, limit=limit)
+    return users
+
+
 @app.get("/users/{user_id}", response_model=schemas.User)
 def read_user_by_id(user_id: int, db: Session = Depends(get_db)):
     db_user = crud.get_user(db, user_id=user_id)
