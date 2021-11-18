@@ -1,0 +1,46 @@
+<script>
+    const xhttp = new XMLHttpRequest();
+    const url = '/users';
+    xhttp.open("GET", url);
+    xhttp.send();
+
+    xhttp.onload = function () {
+        if (this.readyState == 4 && this.status == 200) {
+            let response = JSON.parse(xhttp.responseText)
+            let table = document.getElementById("userOverview")
+
+            for (let i = 0; i < response.length; i++) {
+                let row = table.insertRow(-1)
+                let nameCell = row.insertCell()
+                let emailCell = row.insertCell()
+                nameCell.innerHTML = response[i].name
+                emailCell.innerHTML = response[i].email
+            }
+        }
+    };
+
+</script>
+
+<html>
+<style>
+    table, th, td {
+        border: 1px solid black;
+    }
+
+    table {
+        width: 50%;
+    }
+</style>
+<body>
+<div>
+    <h1>User overview</h1>
+    <table id="userOverview">
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+        </tr>
+    </table>
+</div>
+</body>
+</html>
+

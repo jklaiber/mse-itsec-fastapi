@@ -1,3 +1,4 @@
+import html
 from sqlalchemy.orm import Session
 
 from . import models, schemas
@@ -13,6 +14,15 @@ def get_user_by_email(db: Session, email: str):
 
 def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.User).offset(skip).limit(limit).all()
+
+
+def get_users_encoded(db: Session, skip: int = 0, limit: int = 100):
+    users = []
+    for user in db.query(models.User).offset(skip).limit(limit).all():
+        user.name = html.escape(user.name)
+        user.email = html.escape(user.email)
+        users.append(user)
+    return users
 
 
 def create_user(db: Session, user: schemas.UserCreate):
@@ -49,3 +59,8 @@ def get_user_by_name_safe2(db: Session, name: str):
 
 def get_user_by_name_unsafe(db: Session, name: str):
     return db.execute(f"SELECT * FROM users WHERE name = '{name}'").all()
+
+
+def delete_user_by_id(db: Session, id: int):
+    db.query(models.User).filter(models.User.id == id).delete()
+    db.commit()
