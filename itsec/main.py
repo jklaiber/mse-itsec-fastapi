@@ -1,15 +1,22 @@
-from typing import List
-from fastapi import Depends, FastAPI, HTTPException
-from sqlalchemy.orm import Session
+import os
 
+from typing import List
+from fastapi import Depends, FastAPI, HTTPException, status
+from sqlalchemy.orm import Session
+from fastapi.staticfiles import StaticFiles
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import jwt
 from . import crud, models, schemas
 from .database import SessionLocal, engine
-from fastapi.staticfiles import StaticFiles
+
+JWT_SECRET = os.getenv("JWT_SECRET", "jwttoken")
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def get_db():
@@ -18,6 +25,31 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+@app.post("/token")
+def generate_token(
+    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+):
+    user = crud.authenticate_user(form_data.username, form_data.password, db)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+        )
+    else:
+        user = schemas.User.from_orm(user)
+        return {
+            "access_token": jwt.encode(user.dict(), JWT_SECRET),
+            "token_type": "bearer",
+        }
+
+
+@app.get("/users/myself", response_model=schemas.User)
+def get_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    payload = jwt.decode(token, JWT_SECRET)
+    user = crud.get_user(db, payload.get("id"))
+    return user
 
 
 @app.post("/users/", response_model=schemas.User)
@@ -34,10 +66,11 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return users
 
 
-@app.get("/usersencoded/", response_model=List[schemas.User])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    users = crud.get_users_encoded(db, skip=skip, limit=limit)
-    return users
+# Used to prevent stored XSS attack
+# @app.get("/usersencoded/", response_model=List[schemas.User])
+# def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+#     users = crud.get_users_encoded(db, skip=skip, limit=limit)
+#     return users
 
 
 @app.get("/users/{user_id}", response_model=schemas.User)
@@ -48,28 +81,31 @@ def read_user_by_id(user_id: int, db: Session = Depends(get_db)):
     return db_user
 
 
-@app.get("/users/safe1/{name}", response_model=schemas.User)
-def read_user_by_name_safe1(name: str, db: Session = Depends(get_db)):
-    db_user = crud.get_user_by_name_safe1(db=db, name=name)
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return db_user
+# Used for demo for SQLInjection
+# @app.get("/users/safe1/{name}", response_model=schemas.User)
+# def read_user_by_name_safe1(name: str, db: Session = Depends(get_db)):
+#     db_user = crud.get_user_by_name_safe1(db=db, name=name)
+#     if db_user is None:
+#         raise HTTPException(status_code=404, detail="User not found")
+#     return db_user
 
 
-@app.get("/users/safe2/{name}", response_model=schemas.User)
-def read_user_by_name_safe2(name: str, db: Session = Depends(get_db)):
-    db_user = crud.get_user_by_name_safe2(db=db, name=name)
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return db_user
+# Used for demo for SQLInjection
+# @app.get("/users/safe2/{name}", response_model=schemas.User)
+# def read_user_by_name_safe2(name: str, db: Session = Depends(get_db)):
+#     db_user = crud.get_user_by_name_safe2(db=db, name=name)
+#     if db_user is None:
+#         raise HTTPException(status_code=404, detail="User not found")
+#     return db_user
 
 
-@app.get("/users/unsafe/{name}")
-def read_user_by_name_unsafe(name: str, db: Session = Depends(get_db)):
-    db_user = crud.get_user_by_name_unsafe(db=db, name=name)
-    if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    return db_user
+# Used for demo for SQLInjection
+# @app.get("/users/unsafe/{name}")
+# def read_user_by_name_unsafe(name: str, db: Session = Depends(get_db)):
+#     db_user = crud.get_user_by_name_unsafe(db=db, name=name)
+#     if db_user is None:
+#         raise HTTPException(status_code=404, detail="User not found")
+#     return db_user
 
 
 @app.delete("/user/{user_id}")
