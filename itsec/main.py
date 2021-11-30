@@ -1,13 +1,24 @@
 import os
 
 from typing import List
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse
+from fastapi_csrf_protect import CsrfProtect
+from fastapi_csrf_protect.exceptions import CsrfProtectError
 from jose import jwt
 from . import crud, models, schemas
 from .database import SessionLocal, engine
+from pydantic import BaseModel
+
+class CsrfSettings(BaseModel):
+    secret_key:str = 'test_secret123' #put somewhere safe
+
+@CsrfProtect.load_config
+def get_csrf_config():
+    return CsrfSettings()
 
 JWT_SECRET = os.getenv("JWT_SECRET", "jwttoken")
 
@@ -44,12 +55,22 @@ def generate_token(
             "token_type": "bearer",
         }
 
+@app.get("/csrftoken/")
+async def get_csrf_token(csrf_protect:CsrfProtect = Depends()):
+    response = JSONResponse(status_code=200, content ={'csrf_token':'cookie'})
+    csrf_protect.set_csrf_cookie(response)
+    return response
 
 @app.get("/users/myself", response_model=schemas.User)
-def get_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_user(request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db), csrf_protect:CsrfProtect = Depends()):
+    csrf_protect.validate_csrf_in_cookies(request)
     payload = jwt.decode(token, JWT_SECRET)
     user = crud.get_user(db, payload.get("id"))
     return user
+
+@app.exception_handler(CsrfProtectError)
+def csrf_protect_exception_handler(request: Request, exc: CsrfProtectError):
+    return JSONResponse(status_code=exc.status_code, content = {'detail':exc.message})    
 
 
 @app.post("/users/", response_model=schemas.User)
